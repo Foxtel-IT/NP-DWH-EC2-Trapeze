@@ -1,4 +1,4 @@
-Description:  This template deploys Foxtel Windows trapeze EC2 server.
+Description:  This template deploys Foxtel Windows new trapeze EC2 server.
 Parameters:
   AppName:
     Description: An application name that will be prefixed to resource names
