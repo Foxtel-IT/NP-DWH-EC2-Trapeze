@@ -1,6 +1,6 @@
 {
     "Parameters" : {
-      "EnvName"               : "UAT",
+      "EnvName"               : "uat",
       "EC2ImageID"            : "ami-0acb8241105da84cd",
       "EC2InstanceType"       : "t3a.xlarge",
 	  "AppName"           : "uat-trapeze",
