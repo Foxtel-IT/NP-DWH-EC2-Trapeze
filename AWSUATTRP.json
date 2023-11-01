@@ -1,0 +1,13 @@
+{
+    "Parameters" : {
+      "EnvName"               : "UAT",
+      "EC2ImageID"            : "ami-0acb8241105da84cd",
+      "EC2InstanceType"       : "t3a.xlarge",
+	  "AppName"           : "uat-trapeze",
+      "EC2SSHKey"             : "Trapeze-np-Key",
+      "TrustedServicesCorpSubnetIDBlocks"  : "subnet-00eba5503f68361ef",
+	  "VpcId"                 : "vpc-0b740f5e1f33c7a11",
+      "DeployInstance"        : "yes",
+      "ServiceName"           : "trapeze"
+    }
+}

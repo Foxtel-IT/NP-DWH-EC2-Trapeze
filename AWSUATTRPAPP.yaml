@@ -1,0 +1,167 @@
+Description:  This template deploys Foxtel Windows trapeze EC2 server.
+Parameters:
+  AppName:
+    Description: An application name that will be prefixed to resource names
+    Type: String
+    Default: uat-trapeze
+  ServiceName:
+    Description: An application name that will be prefixed to resource names
+    Type: String
+    Default: trapeze
+  EnvName:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+    AllowedValues:
+      - dev
+      - sit
+      - uat
+      - prod
+      - nonprod
+    Default: uat
+  VpcId:
+    Description: Please enter the VPC id
+    Type: AWS::EC2::VPC::Id
+    Default: vpc-0b740f5e1f33c7a11
+  TrustedServicesCorpSubnetIDBlocks:
+    Description: List of Subnet IDs blocks where servers will be deployed
+    Type: AWS::EC2::Subnet::Id
+    Default: subnet-00eba5503f68361ef
+  EC2SSHKey:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Specify SSH Key Name to use for the EC2 Hosts 
+    Default: Trapeze-np-Key
+  EC2ImageID:
+    Description: Provide the imageid that will be used for the EC2 autoscale group
+    Type: String
+    Default: ami-0acb8241105da84cd  
+  EC2InstanceType:
+    Type: String
+    Description: Specify the instance type that will run the EC2 compute
+    Default: t3a.xlarge
+  DeployInstance:
+    Type: String
+    Description: Specify if the stack is to be deployed now (yes/no)
+    AllowedValues: ["yes", "no"]
+    Default: "yes"    
+
+Conditions:
+  isDeployInstance: !Equals ["yes", !Ref DeployInstance]
+
+Resources:
+  MySecurityGroup1:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: 'AWSUATTRPAPP01-Security-Group'
+      GroupName : 'trusted-AWSUATTRPAPP01-sgs'
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 10.0.0.0/8
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '139'
+          ToPort: '139'
+          CidrIp: 10.77.136.22/32
+        - IpProtocol: tcp
+          FromPort: '445'
+          ToPort: '445'
+          CidrIp: 10.77.136.22/32
+        - IpProtocol: tcp
+          FromPort: '8001'
+          ToPort: '8002'
+          CidrIp: 10.77.93.0/24
+        - IpProtocol: tcp
+          FromPort: '3389'
+          ToPort: '3389'
+          CidrIp: 10.0.0.0/8
+      VpcId: !Ref 'VpcId'          
+      Tags: 
+        - Key: 'foxtel:service-name'
+          Value: "TCS Trapeze"
+        - Key: Name
+          Value: !Sub 'AWSUATTRPAPP01-sg'  
+  MySecurityGroup2:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: !Sub 'AWSUATTRPSQL01-Security-Group'
+      GroupName : !Sub 'trusted-AWSUATTRPSQL01-sgs'
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 10.0.0.0/8
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '3389'
+          ToPort: '3389'
+          CidrIp: 10.0.0.0/8
+
+      VpcId: !Ref 'VpcId'          
+      Tags: 
+        - Key: 'foxtel:service-name'
+          Value: "TCS Trapeze"
+        - Key: Name
+          Value: !Sub 'AWSUATTRPSQL01-sg'
+# Application Server starts below
+  AWSUATTRPAPP01:
+    Type: AWS::EC2::Instance
+    Condition: isDeployInstance
+    Properties:
+      IamInstanceProfile: DWH-EC2-Role
+      ImageId: !Ref EC2ImageID
+      InstanceType: !Ref EC2InstanceType
+      KeyName: !Ref EC2SSHKey
+      SubnetId: !Ref TrustedServicesCorpSubnetIDBlocks
+      SecurityGroupIds:
+      - !Ref MySecurityGroup1
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 100
+        - DeviceName: xvdf
+          Ebs:
+            VolumeSize: 25
+        - DeviceName: xvdz
+          Ebs:
+            VolumeSize: 25
+      Tags:
+      - Key: Name
+        Value: 'AWSUATTRPAPP01'
+      - Key: foxtel:backup-plan
+        Value: 'true'
+      - Key: Environment
+        Value: "UAT"
+      - Key: foxtel:service-name
+        Value: 'TCS Trapeze'        
+      - Key: foxtel:project
+        Value: 'TCS Trapeze'
+  
+  AWSUATTRPSQL01:
+    Type: AWS::EC2::Instance
+    Condition: isDeployInstance
+    Properties:
+      IamInstanceProfile: DWH-EC2-Role
+      ImageId: !Ref EC2ImageID
+      InstanceType: !Ref EC2InstanceType
+      KeyName: !Ref EC2SSHKey
+      SubnetId: !Ref TrustedServicesCorpSubnetIDBlocks
+      SecurityGroupIds:
+      - !Ref MySecurityGroup2
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 100
+        - DeviceName: xvdf
+          Ebs:
+            VolumeSize: 25
+        - DeviceName: xvdz
+          Ebs:
+            VolumeSize: 25
+      Tags:
+      - Key: Name
+        Value: 'AWSUATTRPSQL01'
+      - Key: foxtel:backup-plan
+        Value: 'true'
+      - Key: Environment
+        Value: "UAT"
+      - Key: foxtel:service-name
+        Value: 'DWH-MSSQL'        
+      - Key: foxtel:project
+        Value: 'TCS Trapeze'
